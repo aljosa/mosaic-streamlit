@@ -5,9 +5,17 @@ on: push
 jobs:
   build-pyinstaller:
     name: Build Streamlit app with PyInstaller
-    runs-on: windows-latest
+    runs-on: [windows-latest, macos-latest]
 
     steps:
+      - name: Set the value
+        id: step_one
+        run: echo "action_state=yellow" >> $GITHUB_ENV
+
+      - name: Use the value
+        id: step_two
+        run: echo "${{ env.action_state }}" # This will output 'yellow'
+
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -20,10 +28,21 @@ jobs:
           python-version: '3.8.8'
           architecture: 'x64'
 
+      - run: env
       - run: python --version
       - run: python -m venv venv
-      - run: .\venv\Scripts\Activate.ps1
-      - run: pip install -r windows-requirements.txt
+      - run: pip install -r ${{ env.RUNNER_OS_SHORT }}-requirements.txt
+
+      - run: |
+          .\venv\Scripts\Activate.ps1
+          pip install -r windows-requirements.txt
+        if: ${{ runner.os }} == 'Windows'
+
+      - run: |
+          . ./venv/bin/activate
+          pip install -r macos-requirements.txt
+        if: ${{ runner.os }} == 'macOS'
+
       - run: cd build && ./build.ps1
       - run: ls build
       - run: ls build/dist
@@ -37,7 +56,8 @@ jobs:
 
   build-electron:
     name: Build Electron app
-    runs-on: windows-latest
+    needs: build-pyinstaller
+    runs-on: [windows-latest, macos-latest]
 
     steps:
       - name: Checkout code
