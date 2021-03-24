@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v2
@@ -33,19 +35,13 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.SYSTEM_NAME }}-runtime.zip
-          path: ${{ github.workspace }}/runtime.zip
-          if-no-files-found: ignore
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ env.SYSTEM_NAME }}-release.zip
+          name: ${{ env.PRODUCT_OS_AND_VERSION }}-release.zip
           path: ${{ github.workspace }}/release.zip
           if-no-files-found: ignore
 
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.SYSTEM_NAME }}-release.dmg
+          name: ${{ env.PRODUCT_OS_AND_VERSION }}-release.dmg
           path: ${{ github.workspace }}/release.dmg
           if-no-files-found: ignore
 
