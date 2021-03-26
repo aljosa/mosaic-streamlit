@@ -5,8 +5,10 @@ jobs:
     name: Release builder
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [macos-latest, windows-latest]
+        python: ['3.7.9', '3.8.8', '3.9.2']
 
     steps:
       - name: Checkout
@@ -17,7 +19,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8.8'
+          python-version: ${{ matrix.python }}
           architecture: 'x64'
 
       - name: Setup Node
@@ -35,13 +37,13 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.PRODUCT_OS_AND_VERSION }}-release.zip
+          name: ${{ env.PRODUCT_OS_AND_VERSION }}-${{ matrix.os }}-${{ matrix.python }}-release.zip
           path: ${{ github.workspace }}/release.zip
           if-no-files-found: ignore
 
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.PRODUCT_OS_AND_VERSION }}-release.dmg
+          name: ${{ env.PRODUCT_OS_AND_VERSION }}-${{ matrix.os }}-${{ matrix.python }}-release.dmg
           path: ${{ github.workspace }}/release.dmg
           if-no-files-found: ignore
 
