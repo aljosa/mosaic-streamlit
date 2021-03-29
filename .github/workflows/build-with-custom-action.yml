@@ -28,7 +28,7 @@ jobs:
           node-version: '14'
 
       - name: Build release(s)
-        uses: aljosa/actions@main
+        uses: MissionBio/actions@main
         with:
           source_path: .
           build_path: build
