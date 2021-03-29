@@ -7,7 +7,7 @@ pyinstaller --additional-hooks-dir=hooks \
   --hidden-import plotly.graph_objs \
   --hidden-import _plotly_future_ \
   --hidden-import _plotly_utils \
-  --clean -w -dall run.py
+  --clean -w run.py
 
 cp ../*.py ./dist/run/
 cp -r ../tasks ./dist/run/
