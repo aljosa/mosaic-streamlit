@@ -1,0 +1,66 @@
+on: [push]
+
+jobs:
+  build_releases:
+    name: Release builder
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        python: ['3.8.8']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+          architecture: 'x64'
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Test Streamlit app
+        shell: bash
+        run: |
+          echo "Testing Streamlit app"
+          SYSTEM_NAME=$(echo "$RUNNER_OS" | tr '[:upper:]' '[:lower:]')
+          echo "SYSTEM_NAME=$SYSTEM_NAME" >> $GITHUB_ENV
+          echo "BUILD_SCRIPT=build-$SYSTEM_NAME.sh" >> $GITHUB_ENV
+
+          if [ $SYSTEM_NAME = "windows" ]; then
+            echo "VENV_ACTIVATE=source ./venv/Scripts/activate" >> $GITHUB_ENV
+          else
+            echo "VENV_ACTIVATE=source ./venv/bin/activate" >> $GITHUB_ENV
+          fi
+
+          python -m venv venv
+          $VENV_ACTIVATE
+          # Always upgrade pip and wheels
+          python -m pip install --upgrade pip wheel
+
+          REQUIREMENTS=$SYSTEM_NAME-requirements.txt
+          if [ -f "$REQUIREMENTS" ]; then
+            echo "$REQUIREMENTS exists."
+            pip install -r $REQUIREMENTS
+          else 
+            echo "$REQUIREMENTS does not exist."
+            pip install -r requirements.txt
+          fi
+
+          streamlit run app.py --global.developmentMode=false --server.port=10000 --server.headless=true --server.fileWatcherType=none &
+          cd tests
+          yarn install
+          mkdir -p ~/mosaic-streamlit-h5/h5/downloads/
+          cp Raji-KG1.demo.h5 ~/mosaic-streamlit-h5/h5/downloads/
+          MOSAIC_STREAMLIT_TEST_SERVER=http://localhost:10000 node --unhandled-rejections=strict index.js
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.SYSTEM_NAME }}-screenshots.zip
+          path: ${{ github.workspace }}/tests/*png

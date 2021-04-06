@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer')
 
 const assert = (isValid, errorMessage) => {
   if (!isValid) {
@@ -7,51 +7,71 @@ const assert = (isValid, errorMessage) => {
   }
 }
 
+async function screenshot(page) {
+  if (this.screenshotCount) {
+    this.screenshotCount++
+  } else {
+    this.screenshotCount = 1
+  }
+
+  console.log('Screenshot ', this.screenshotCount)
+  await page.screenshot({path: `screenshot-${this.screenshotCount}.png`})
+}
+
 (async () => {
   const browser = await puppeteer.launch({
     defaultViewport: {
       width: 1500,
       height: 1200
     }
-  });
+  })
 
-  const page = await browser.newPage();
-  await page.goto('http://localhost:8501/');
+  const SERVER_URL = process.env.MOSAIC_STREAMLIT_TEST_SERVER
+  const page = await browser.newPage()
 
-  const mosaicTitle = "GUI for Mosaic built using Streamlit"
-  await page.waitForSelector('.stApp h3')
-  await page.screenshot({ path: 'main.png' });
-  const element = await page.$('.stApp h3')
-  let value = await element.evaluate(el => el.textContent)
-  assert(value === mosaicTitle, 'Mosaic title not found')
+  try {
+    await page.goto(SERVER_URL)
+    await screenshot(page)
 
-  const h5_file = 'Raji-KG1.demo.h5'
-  const h5_selection = await page.$('.stSelectbox')
-  let box = await page.$('div.stSelectbox')
-  await page.screenshot({path: 'dropdown-1.png'})
+    const mosaicTitle = "GUI for Mosaic built using Streamlit"
+    await page.waitForSelector('.stApp h3')
+    await screenshot(page)
 
-  await box.click()
-  await page.screenshot({path: 'dropdown-2.png'})
+    const element = await page.$('.stApp h3')
+    let value = await element.evaluate(el => el.textContent)
+    assert(value === mosaicTitle, 'Mosaic title not found')
 
-  let el = await page.$x("//span[contains(., 'Raji')]")
-  await page.screenshot({path: 'dropdown-3.png'})
-  el[0].click()
-  await page.screenshot({path: 'dropdown-4.png'})
-  console.log('after #4')
+    await page.evaluate(_ => {
+      const sidebar = document.querySelector('section[data-testid=stSidebar]')
+      sidebar.hidden = false
+      const sidebar_block = document.querySelector('section[data-testid=stSidebar] > div:first-of-type')
+      sidebar_block.style.width = '100rem !important'
+      sidebar_block.style.marginLeft = '100rem !important'
+      sidebar_block.style.background = 'red'
+    })
+    await screenshot(page)
 
-  await page.waitForXPath("//label[contains(., 'Running')]")
-  await page.screenshot({path: 'dropdown-5.png'})
-  console.log('after #5')
+    const selectFiles = await page.waitForSelector("div.stSelectbox")
+    selectFiles.click()
+    await screenshot(page)
 
-  await page.waitForXPath("//p[contains(., 'Creating visuals.')]")
-  await page.screenshot({path: 'dropdown-6.png'})
-  console.log('after #6')
+    const el = await page.waitForXPath("//span[contains(., 'Raji')]")
+    el.click()
+    await screenshot(page)
 
-  await page.waitForXPath("//p[contains(., 'Done.')]")
-  await page.waitForXPath("//label[contains(., 'Running')]", {hidden: true})
+    await page.waitForXPath("//label[contains(., 'Running')]")
+    await screenshot(page)
 
-  await page.screenshot({path: 'dropdown-7.png'})
-  console.log('after #7')
+    await page.waitForXPath("//p[contains(., 'Creating visuals.')]", {timeout: 0})
+    await screenshot(page)
 
-  await browser.close();
-})();
+    await page.waitForXPath("//p[contains(., 'Done.')]")
+    await page.waitForXPath("//label[contains(., 'Running')]", {hidden: true})
+    await screenshot(page)
+
+  } catch(ex) {
+    console.log('Exception', ex)
+  }
+
+  await browser.close()
+})()
